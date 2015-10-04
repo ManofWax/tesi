@@ -1,4 +1,5 @@
 from ChatManager import *
+from twokenizer import *
 import logging
 from Twitch import Emotes
 __author__ = 'wax'
