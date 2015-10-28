@@ -310,7 +310,12 @@ if __name__== "__main__":
         i += 1
         if i % 10000 == 0:
             print("Lines processed: {}".format(i))
-            fileHandler = codecs.open(sys.argv[1] +".out", encoding='utf8', mode='a')
-            fileHandler.write(textOutput)
+            fileOut = codecs.open(sys.argv[1] +".out", encoding='utf8', mode='a')
+            fileOut.write(textOutput)
             textOutput = ""
-            fileHandler.close()
+            fileOut.close()
+    print("Lines processed: {}".format(i))
+    fileOut = codecs.open(sys.argv[1] +".out", encoding='utf8', mode='a')
+    fileOut.write(textOutput)
+    textOutput = ""
+    fileOut.close()
