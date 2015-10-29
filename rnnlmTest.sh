@@ -1,25 +1,20 @@
-corpus=all_grt1.txt
+corpus=all.noURL.txt
 posNegDir=PosNeg
 mkdir $posNegDir
 
-grep -i "kappa" $corpus > $posNegDir/kappa.pos
-grep -i "4head" $corpus > $posNegDir/4head.pos
-grep -i "kreygasm" $corpus > $posNegDir/kreygasm.pos
-grep -i "elegiggle" $corpus > $posNegDir/eleg.pos
-grep -i "wutface" $corpus > $posNegDir/wutface.neg
-grep -i "notlikethis" $corpus > $posNegDir/notlike.neg
-grep -i "failfish" $corpus > $posNegDir/fail.neg
-grep -i "biblethump" $corpus > $posNegDir/biblethump.neg
-grep -i "dansgame" $corpus > $posNegDir/dans.neg
-grep -i "babyrage" $corpus > $posNegDir/baby.neg
+awk '{if(NF>4) print $0}' $corpus > $corpus.4.txt
+corpus=$corpus.4.txt
+
+grep -E -i "kappa|4head|kreygasm|elegiggle" $corpus > $posNegDir/all.pos
+grep -E -i "wutface|notlikethis|failfish|biblethump|dansgame|babyrage" $corpus > $posNegDir/all.neg
 
 cd $posNegDir
-cat *.pos > all_pos.txt
-cat *.neg > all_neg.txt
-shuf -n 12500 all_neg.txt > train-neg.txt
-shuf -n 12500 all_pos.txt > train-pos.txt
-shuf -n 25000 all_pos.txt > test-pos.txt
-shuf -n 25000 all_neg.txt > test-neg.txt
+sed -e "s/kappa//gI;s/4head//gI;s/kreygasm//gI;s/elegiggle//gI" < all.pos > all_pos_processed.txt
+sed -e "s/wutface//gI;s/notlikethis//gI;s/failfish//gI;s/biblethump//gI;s/dansgame//gI;s/babyrage//gI" < all.neg > all_neg_processed.txt
+shuf -n 12500 all_neg_processed.txt > train-neg.txt
+shuf -n 12500 all_pos_processed.txt > train-pos.txt
+shuf -n 25000 all_pos_processed.txt > test-pos.txt
+shuf -n 25000 all_neg_processed.txt > test-neg.txt
 
 head train-pos.txt -n 12300 > train
 tail train-pos.txt -n 200 > valid
@@ -39,8 +34,8 @@ cd ..
 cat RNNLM-SCORE | awk ' \
 BEGIN{cn=0; corr=0;} \
 { \
-  if ($3<1) if (cn<100000) corr++; \
-  if ($3>1) if (cn>=100000) corr++; \
+  if ($3<1) if (cn<50000) corr++; \
+  if ($3>1) if (cn>=50000) corr++; \
   cn++; \
 } \
 END{print "RNNLM accuracy: " corr/cn*100 "%";}'
