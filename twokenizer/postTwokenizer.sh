@@ -6,3 +6,4 @@ sed 's!http[s]\?://\S*!URL!g' $1 |  perl -ne 's/(?<=(?<!\pL)\pL) (?=\pL(?!\pL))/
 
 #Remove lines with more than 3 repetition per word
 #grep -P '^(?!.*?\b(\w+)\W+\g{-1}\W+\g{-1}).*' all.perl.lower.txt > 
+#DISREGARD THAT IT DOESN'T WORK

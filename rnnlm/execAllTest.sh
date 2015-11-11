@@ -1,6 +1,6 @@
 for y in *.pos
 do
-    for i in *.neg
+    for i in *.pos
     do
         /bin/bash rnnlmExec.sh  $y $i
     done
