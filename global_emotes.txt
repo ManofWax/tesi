@@ -1,4 +1,4 @@
-4Head 2
+4Head
 ANELE
 ArgieB8
 ArsonNoSexy
@@ -7,10 +7,10 @@ AtGL
 AthenaPMS
 AtIvy
 AtWW
-BabyRage 1
+BabyRage
 BatChest
 BCWarrior
-BibleThump 1
+BibleThump
 BigBrother
 BionicBunion
 BlargNaut
@@ -24,7 +24,7 @@ CoolCat
 CorgiDerp
 CougarHunt
 DAESuppy
-DansGame 1
+DansGame
 DatHass
 DatSheffy
 DBstyle
@@ -35,9 +35,9 @@ DogFace
 DOOMGuy
 duDudu
 EagleEye
-EleGiggle 2
+EleGiggle
 EvilFetus
-FailFish 1
+FailFish
 FPSMarksman
 FrankerZ
 FreakinStinkin
@@ -56,12 +56,12 @@ Jebaited
 JKanStyle
 JonCarnage
 KAPOW
-Kappa 2
-KappaPride 2
+Kappa
+KappaPride
 Keepo
 KevinTurtle
 Kippa
-Kreygasm 2
+Kreygasm
 KZskull
 Mau5
 mcaT
@@ -72,7 +72,7 @@ NightBat
 NinjaTroll
 NoNoSpot
 NotATK
-NotLikeThis 1
+NotLikeThis
 OMGScoots
 OneHand
 OpieOP
@@ -92,7 +92,7 @@ PermaSmug
 PicoMause
 PipeHype
 PJHarley
-PJSalt 1
+PJSalt
 PMSTwin
 PogChamp
 Poooound
@@ -148,5 +148,5 @@ Volcania
 WholeWheat
 WinWaker
 WTRuck
-WutFace 1
+WutFace
 YouWHY

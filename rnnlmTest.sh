@@ -15,8 +15,10 @@ cd $posNegDir
 sed -e "s/kappa//gI;s/4head//gI;s/kreygasm//gI;s/elegiggle//gI" < all.pos > all.pos.tmp
 sed -e "s/wutface//gI;s/notlikethis//gI;s/failfish//gI;s/biblethump//gI;s/dansgame//gI;s/babyrage//gI" < all.neg > all.neg.tmp
 #remove double or multiple spaces
-sed -e "s/  \+/ /g" < all.pos.tmp > all_pos_processed.txt
-sed -e "s/  \+/ /g" < all.neg.tmp > all_neg_processed.txt
+sed -e "s/  \+/ /g" < all.pos.tmp > all.pos
+sed '/^\s*$/d' < all.pos > all_pos_processed.txt
+sed -e "s/  \+/ /g" < all.neg.tmp > all.neg
+sed '/^\s*$/d'< all.neg > all_neg_processed.txt
 
 shuf -n 12500 all_neg_processed.txt > train-neg.txt
 shuf -n 12500 all_pos_processed.txt > train-pos.txt
