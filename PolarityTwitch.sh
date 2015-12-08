@@ -1,6 +1,6 @@
 #costants
 positiveEmotes="kappa|4head|kreygasm|elegiggle|kappapride|kreygasm|heyguys|anele"
-negativeEmotes="residentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
+negativeEmotes="babyrageresidentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
 ALLPOSFILE="all.pos"
 ALLNEGFILE="all.neg"
 NEUTRALFILE="all.neu"
@@ -28,7 +28,7 @@ split -l $linesSplit $1 $1.split.
 echo "Launching $PROCNUMBER instances of twokenize."
 echo "It will take a lot of time don't worry"
 for i in `ls *.split.*`; do
-    python twokenize.py $i &
+    python twokenize.py $i `echo $i | sed -e's/.split.//gI'`.out &
 done
 wait
 
@@ -44,7 +44,7 @@ echo "Removing lines with less than 4 tokens"
 awk '{if(NF>4) print tolower($0);}' $1.tmp > $1
 
 echo "Cleanup"
-rm $twokenizeOutput $1.tmp *.split.*
+rm $1.tmp *.split.* *.out
 }
 
 function ProcessPosNegFiles
@@ -77,20 +77,20 @@ sed -i -e '/^\s*$/d' $NEUTRALFILE
 
 function RnnlmExec
 {
-shuf -n 12500 $2 > train-neg.txt
-shuf -n 12500 $1 > train-pos.txt
-shuf -n 25000 $2 > test-neg.txt
-shuf -n 25000 $1 > test-pos.txt
+head -n $TRAININGSIZE $1 > train-pos.txt
+head -n $TRAININGSIZE $2 > train-neg.txt
+tail -n $TESTSIZE $1 > test-pos.txt
+tail -n $TESTSIZE $2 > test-neg.txt
 
-echo "Training positive file"
-head train-pos.txt -n 12300 > train
-tail train-pos.txt -n 200 > valid
-rnnlm -rnnlm model-pos -train train -valid valid -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+head train-pos.txt -n $(($TRAININGSIZE - 200)) > train.pos
+tail train-pos.txt -n 200 > valid.pos
 
-echo "Training negative file"
-head train-neg.txt -n 12300 > train
-tail train-neg.txt -n 200 > valid
-rnnlm -rnnlm model-neg -train train -valid valid -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+head train-neg.txt -n $(($TRAININGSIZE - 200)) > train.neg
+tail train-neg.txt -n 200 > valid.neg
+
+echo "Running Rnnlm training"
+rnnlm -rnnlm model-pos -train train.pos -valid valid.pos -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+rnnlm -rnnlm model-neg -train train.neg -valid valid.neg -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
 
 echo "Running test"
 cat test-pos.txt test-neg.txt > test.txt
@@ -101,9 +101,10 @@ rnnlm -rnnlm model-neg -test test-id.txt -debug 0 -nbest > model-neg-score
 echo "Writing result to RNNLM-SCORE"
 paste model-pos-score model-neg-score | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
-echo "clean up"
-rm train valid model-pos-score model-neg-score test.txt test-pos.txt test-neg.txt
-rm train-neg.txt train-pos.txt
+echo "Clean up"
+rm train* valid* model-pos-score model-neg-score test.txt test-pos.txt test-neg.txt
+rm train-neg.txt train-pos.txt test-id.txt model-neg model-pos
+rm model-neg.output.txt model-pos.output.txt
 }
 
 function Word2VecExec
@@ -111,6 +112,10 @@ function Word2VecExec
 CheckFile $1
 CheckFile $2
 CheckFile $3
+local vecRes="sentence_vectors.txt"
+local lenFile1=`wc -l < $1`
+local lenFile2=`wc -l < $2`
+local lenFile3=`wc -l < $3`
 
 echo "Merging pos, neg and neutral file"
 cat $1 $2 $3 | awk 'BEGIN{a=0;}{print "_*" a " " $0; a++;}' > vec-id.txt
@@ -119,8 +124,65 @@ echo "Start computating Vectors"
 time ./word2vec -train vec-id.txt -output vectors.txt -cbow 0 -size 100 -window 10 -negative 5 -hs 0 -sample 1e-4 -threads 40 -binary 0 -iter 20 -min-count 1 -sentence-vectors 1
 
 echo "Keeping only sentence vectors"
-grep '_\*' vectors.txt > sentence_vectors.txt
-rm vectors.txt
+grep '^_\*' vectors.txt > $vecRes
+
+echo "Splitting vectors in pos, neg files"
+head -n $lenFile1 $vecRes > pos_vectors.txt
+head -n $(($lenFile1 + $lenFile2)) $vecRes | tail -n $lenFile2 > neg_vectors.txt
+
+echo "Clean up"
+rm vectors.txt $vecRes vec-id.txt
+}
+
+function LiblinearExec
+{
+CheckFile pos_vectors.txt
+CheckFile neg_vectors.txt
+
+head -n $TRAININGSIZE pos_vectors.txt > pos_vectors.tmp
+head -n $TRAININGSIZE neg_vectors.txt > neg_vectors.tmp
+
+cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<12500) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > train.txt
+
+tail -n $TESTSIZE pos_vectors.txt > pos_vectors.tmp
+tail -n $TESTSIZE neg_vectors.txt > neg_vectors.tmp
+cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<25000) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > test.txt
+./train -s 0 train.txt model.logreg
+./predict -b 1 test.txt model.logreg out.logreg
+tail -n $(($TESTSIZE * 2)) out.logreg > SENTENCE-VECTOR.LOGREG
+
+echo "Clean up"
+rm *.tmp train.txt test.txt model.logreg out.logreg
+}
+
+function PrintFinalResults
+{
+cat RNNLM-SCORE | awk -v size=$TESTSIZE' \
+BEGIN{cn=0; corr=0;} \
+{ \
+  if ($3<1) if (cn<size) corr++; \
+  if ($3>1) if (cn>=size) corr++; \
+  cn++; \
+} \
+END{print "RNNLM accuracy: " corr/cn*100 "%";}'
+
+cat SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE' \
+BEGIN{cn=0; corr=0;} \
+{ \
+  if ($2>0.5) if (cn<size) corr++; \
+  if ($2<0.5) if (cn>=size) corr++; \
+  cn++; \
+} \
+END{print "Sentence vector + logistic regression accuracy: " corr/cn*100 "%";}'
+
+paste RNNLM-SCORE SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE' \
+BEGIN{cn=0; corr=0;} \
+{ \
+  if (($3-1)*7+(0.5-$5)<0) if (cn<size) corr++; \
+  if (($3-1)*7+(0.5-$5)>0) if (cn>=size) corr++; \
+  cn++; \
+} \
+END{print "FINAL accuracy: " corr/cn*100 "%";}'
 }
 
 #MAIN PROGRAM START
@@ -144,6 +206,10 @@ case $key in
     TESTSIZETMP="$2"
     shift
     ;;
+    -kv|--keepVectors)
+    KEEPVECTORTMP="$2"
+    shift
+    ;;
     *)
             # unknown option
     ;;
@@ -151,25 +217,28 @@ esac
 shift
 done
 
-if [ -n $TRAININGSIZETMP ]; then
+if [ ! -z $TRAININGSIZETMP ]; then
     TRAININGSIZE=$TRAININGSIZETMP
 fi
-if [ -n $TESTSIZETMP ]; then
+if [ ! -z $TESTSIZETMP ]; then
     TESTSIZE=$TESTSIZETMP
 fi
 
 if [ -z $STEPS ]; then
     echo "Shitty script fuck you. Usage:"
     echo "-s --steps: set the step starting point"
-    echo "  -s 0    do every step"
+    echo "  -s 0    do every step (NOT YET IMPLEMENTED)"
     echo "  -s 1    Tokenization and file cleanup"
     echo "  -s 2    Split the corpus in pos, neg and neutral files"
     echo "  -s 3    Calculate paragraph vector. It will take a lot of time and a lot of memory"
-    echo "  -s 9    do steps 1,2,3"
+    echo "  -s 9    do steps 1,2"
     echo "  -s 10   Rnnlm train and test"
     echo "  -s 11   Sentence vectors/liblinear train and test"
-    echo "  -s 12   Process result files and output accurancy"
+    echo "  -s 19   Process result files and output accurancy"
     echo "-i --input: input text file. In step -s 1 IT WILL BE OVERWRITTEN"
+    echo "-t --training: training line size. Default: 12500"
+    echo "-tt --test: number of test lines. Default: 25000"
+    echo "-kv --keepVectors: don't clean up useless vectors during -s 3 (NOT YET IMPLEMENTED)"
 else
     case $STEPS in
         1)
@@ -183,10 +252,16 @@ else
         ;;
         9)
         Tokenizer $INPUT
-        ProcessPosNegFiles $INPUT
-        Word2VecExec $ALLPOSFILE $ALLNEGFILE $NEUTRALFILE      
+        ProcessPosNegFiles $INPUT   
         ;;
-        10) RnnlmExec $ALLPOSFILE $ALLNEGFILE
+        10) 
+        RnnlmExec $ALLPOSFILE $ALLNEGFILE
+        ;;
+        11)
+        LiblinearExec
+        ;;
+        19)
+        PrintFinalResults
         ;;
         *)
         #doall
