@@ -137,7 +137,7 @@ echo "Writing result to RNNLM-SCORE"
 paste model-pos-score model-neg-score | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
 echo "Clean up"
-rm train* valid* model-pos-score model-neg-score test.txt test-pos.txt test-neg.txt
+rm train.neg train.pos valid.neg valid.pos model-pos-score model-neg-score test.txt test-pos.txt test-neg.txt
 rm train-neg.txt train-pos.txt test-id.txt model-neg model-pos
 rm model-neg.output.txt model-pos.output.txt
 }
