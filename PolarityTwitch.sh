@@ -22,7 +22,7 @@ function Build
 echo "Compiling Rnnlm"
 mkdir rnnlm
 cd rnnlm
-wget http://www.fit.vutbr.cz/~imikolov/rnnlm/rnnlm-0.3e.tgz
+wget https://github.com/ManofWax/tesi/blob/master/Tools/rnnlm-0.4b.tgz
 tar -xvf rnnlm-0.3e.tgz
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math -c rnnlmlib.cpp
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math rnnlm.cpp rnnlmlib.o -o rnnlm
@@ -32,6 +32,7 @@ cd ..
 echo "Compiling word2vec with sentence vectors patch"
 mkdir word2vec
 cd word2vec
+wget https://github.com/ManofWax/tesi/blob/master/Tools/word2vec.c
 gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
 cd word2vec ../
 cd ..
@@ -39,7 +40,7 @@ cd ..
 echo "Compiling liblinear"
 mkdir liblinear
 cd liblinear
-wget http://www.csie.ntu.edu.tw/~cjlin/liblinear/liblinear-1.94.zip
+wget https://github.com/ManofWax/tesi/blob/master/Tools/liblinear-2.1.tar.gz
 unzip liblinear-1.94.zip
 make
 cp train ../
