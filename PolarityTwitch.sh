@@ -8,6 +8,10 @@ SENTENCEVECTORS="sentence_vector.txt"
 TRAININGSIZE=12500
 TESTSIZE=25000
 PROCNUMBER=`cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1`
+RNNLMBINARY="rnnlm/rnnlm"
+WORD2VECBINARY="word2vec/word2vec"
+LIBLINEARTRAINBINARY="liblinear/train"
+LIBLINEARPREDICTBINARY="liblinear=predict"
 
 #helper functions
 function CheckFile {
@@ -26,18 +30,16 @@ wget https://github.com/ManofWax/tesi/blob/master/Tools/rnnlm-0.4b.tgz?raw=true 
 tar --strip-components=1 -xvf rnnlm.tgz
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math -c rnnlmlib.cpp
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math rnnlm.cpp rnnlmlib.o -o rnnlm
-cp rnnlm ../
-cd ..
 chmod +x rnnlm
+cd ..
 
 echo "Compiling word2vec with sentence vectors patch"
 mkdir word2vec
 cd word2vec
 wget https://github.com/ManofWax/tesi/blob/master/Tools/word2vec.c?raw=true -O word2vec.c
 gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
-cd word2vec ../
-cd ..
 chmod +x word2vec
+cd ..
 
 echo "Compiling liblinear"
 mkdir liblinear
@@ -45,11 +47,12 @@ cd liblinear
 wget https://github.com/ManofWax/tesi/blob/master/Tools/liblinear-2.1.tar.gz?raw=true -O liblinear.tar.gz
 tar --strip-components=1 -xvf liblinear.tar.gz
 make
-cp train ../
-cp predict ../
-cd ..
 chmod +x train
 chmod +x predict
+cd ..
+
+echo "Downloading Twokenizer"
+wget twokenizer -O twokenize.py
 }
 
 function Tokenizer
@@ -124,15 +127,15 @@ head train-neg.txt -n $(($TRAININGSIZE - 200)) > train.neg
 tail train-neg.txt -n 200 > valid.neg
 
 echo "Running Rnnlm training"
-rnnlm -rnnlm model-pos -train train.pos -valid valid.pos -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
-rnnlm -rnnlm model-neg -train train.neg -valid valid.neg -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+$RNNLMBINARY -rnnlm model-pos -train train.pos -valid valid.pos -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+$RNNLMBINARY -rnnlm model-neg -train train.neg -valid valid.neg -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
 
 echo "Running test"
 cat test-pos.txt test-neg.txt > test.txt
 #I don't know why but rnnlm needs the corpus with lines number
 awk 'BEGIN{a=0;}{print a " " $0; a++;}' < test.txt > test-id.txt
-rnnlm -rnnlm model-pos -test test-id.txt -debug 0 -nbest > model-pos-score
-rnnlm -rnnlm model-neg -test test-id.txt -debug 0 -nbest > model-neg-score
+$RNNLMBINARY -rnnlm model-pos -test test-id.txt -debug 0 -nbest > model-pos-score
+$RNNLMBINARY -rnnlm model-neg -test test-id.txt -debug 0 -nbest > model-neg-score
 echo "Writing result to RNNLM-SCORE"
 paste model-pos-score model-neg-score | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
@@ -156,7 +159,7 @@ echo "Merging pos, neg and neutral file"
 cat $1 $2 $3 | awk 'BEGIN{a=0;}{print "_*" a " " $0; a++;}' > vec-id.txt
 
 echo "Start computating Vectors"
-time ./word2vec -train vec-id.txt -output vectors.txt -cbow 0 -size 100 -window 10 -negative 5 -hs 0 -sample 1e-4 -threads 40 -binary 0 -iter 20 -min-count 1 -sentence-vectors 1
+time $WORD2VECBINARY -train vec-id.txt -output vectors.txt -cbow 0 -size 100 -window 10 -negative 5 -hs 0 -sample 1e-4 -threads 40 -binary 0 -iter 20 -min-count 1 -sentence-vectors 1
 
 echo "Keeping only sentence vectors"
 grep '^_\*' vectors.txt > $vecRes
@@ -182,8 +185,8 @@ cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<12500) printf "1 ";
 tail -n $TESTSIZE pos_vectors.txt > pos_vectors.tmp
 tail -n $TESTSIZE neg_vectors.txt > neg_vectors.tmp
 cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<25000) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > test.txt
-./train -s 0 train.txt model.logreg
-./predict -b 1 test.txt model.logreg out.logreg
+$LIBLINEARTRAINBINARY -s 0 train.txt model.logreg
+$LIBLINEARPREDICTBINARY -b 1 test.txt model.logreg out.logreg
 tail -n $(($TESTSIZE * 2)) out.logreg > SENTENCE-VECTOR.LOGREG
 
 echo "Clean up"
