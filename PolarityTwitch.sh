@@ -17,6 +17,36 @@ if [ ! -f $1 ]; then
 fi
 }
 
+function Build
+{
+echo "Compiling Rnnlm"
+mkdir rnnlm
+cd rnnlm
+wget http://www.fit.vutbr.cz/~imikolov/rnnlm/rnnlm-0.3e.tgz
+tar -xvf rnnlm-0.3e.tgz
+g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math -c rnnlmlib.cpp
+g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math rnnlm.cpp rnnlmlib.o -o rnnlm
+cp rnnlm ../
+cd ..
+
+echo "Compiling word2vec with sentence vectors patch"
+mkdir word2vec
+cd word2vec
+gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
+cd word2vec ../
+cd ..
+
+echo "Compiling liblinear"
+mkdir liblinear
+cd liblinear
+wget http://www.csie.ntu.edu.tw/~cjlin/liblinear/liblinear-1.94.zip
+unzip liblinear-1.94.zip
+make
+cp train ../
+cp predict ../
+cd ..
+}
+
 function Tokenizer
 {
 local twokenizeOutput=$1.out
@@ -227,7 +257,7 @@ fi
 if [ -z $STEPS ]; then
     echo "Shitty script fuck you. Usage:"
     echo "-s --steps: set the step starting point"
-    echo "  -s 0    do every step (NOT YET IMPLEMENTED)"
+    echo "  -s 0    Build rnnlm, word2vec and liblinear"
     echo "  -s 1    Tokenization and file cleanup"
     echo "  -s 2    Split the corpus in pos, neg and neutral files"
     echo "  -s 3    Calculate paragraph vector. It will take a lot of time and a lot of memory"
@@ -241,6 +271,9 @@ if [ -z $STEPS ]; then
     echo "-kv --keepVectors: don't clean up useless vectors during -s 3 (NOT YET IMPLEMENTED)"
 else
     case $STEPS in
+		0)
+		Build
+		;;
         1)
         Tokenizer $INPUT
         ;;
