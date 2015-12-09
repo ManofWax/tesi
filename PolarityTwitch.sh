@@ -22,30 +22,34 @@ function Build
 echo "Compiling Rnnlm"
 mkdir rnnlm
 cd rnnlm
-wget https://github.com/ManofWax/tesi/blob/master/Tools/rnnlm-0.4b.tgz
-tar -xvf rnnlm-0.3e.tgz
+wget https://github.com/ManofWax/tesi/blob/master/Tools/rnnlm-0.4b.tgz?raw=true -O rnnlm.tgz
+tar --strip-components=1 -xvf rnnlm.tgz
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math -c rnnlmlib.cpp
 g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math rnnlm.cpp rnnlmlib.o -o rnnlm
 cp rnnlm ../
 cd ..
+chmod +x rnnlm
 
 echo "Compiling word2vec with sentence vectors patch"
 mkdir word2vec
 cd word2vec
-wget https://github.com/ManofWax/tesi/blob/master/Tools/word2vec.c
+wget https://github.com/ManofWax/tesi/blob/master/Tools/word2vec.c?raw=true -O word2vec.c
 gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
 cd word2vec ../
 cd ..
+chmod +x word2vec
 
 echo "Compiling liblinear"
 mkdir liblinear
 cd liblinear
-wget https://github.com/ManofWax/tesi/blob/master/Tools/liblinear-2.1.tar.gz
-unzip liblinear-1.94.zip
+wget https://github.com/ManofWax/tesi/blob/master/Tools/liblinear-2.1.tar.gz?raw=true -O liblinear.tar.gz
+tar --strip-components=1 -xvf liblinear.tar.gz
 make
 cp train ../
 cp predict ../
 cd ..
+chmod +x train
+chmod +x predict
 }
 
 function Tokenizer
