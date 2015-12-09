@@ -1,6 +1,9 @@
 #costants
 positiveEmotes="kappa|4head|kreygasm|elegiggle|kappapride|kreygasm|heyguys|anele"
-negativeEmotes="babyrageresidentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
+negativeEmotes="residentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
+EMOTESDIR="Emotes"
+POSEMOTESDIR="$EMOTESDIR/pos"
+NEGEMOTESDIR="$EMOTESDIR/neg"
 ALLPOSFILE="all.pos"
 ALLNEGFILE="all.neg"
 NEUTRALFILE="all.neu"
@@ -11,7 +14,7 @@ PROCNUMBER=`cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1`
 RNNLMBINARY="rnnlm/rnnlm"
 WORD2VECBINARY="word2vec/word2vec"
 LIBLINEARTRAINBINARY="liblinear/train"
-LIBLINEARPREDICTBINARY="liblinear=predict"
+LIBLINEARPREDICTBINARY="liblinear/predict"
 
 #helper functions
 function CheckFile {
@@ -20,7 +23,40 @@ if [ ! -f $1 ]; then
     exit
 fi
 }
+#end helper functions
 
+#multiBombastic algoritm
+function Multi_ProcessEmoticons
+{
+echo "Creating Emoticons Dir"
+mkdir $EMOTESDIR
+echo "Creating Pos and Neg emoticons Dir"
+mkdir $POSEMOTESDIR
+mkdir $NEGEMOTESDIR
+
+#wtf is this magic?!
+IFS='|' read -r -a array <<< "$positiveEmotes"
+for i in "${array[@]}"
+do
+    echo "Processing $i"
+    grep -E -i $i $1 > $POSEMOTESDIR/$i.txt
+    sed -i -e "s/$i//gI" $POSEMOTESDIR/$i.txt
+    sed -i -e "s/  \+/ /g" $POSEMOTESDIR/$i.txt
+    sed -i -e '/^\s*$/d' $POSEMOTESDIR/$i.txt   
+done
+
+IFS='|' read -r -a array <<< "$negativeEmotes"
+for i in "${array[@]}"
+do
+    echo "Processing $i"
+    grep -E -i $i $1 > $NEGEMOTESDIR/$i.txt
+    sed -i -e "s/$i//gI" $NEGEMOTESDIR/$i.txt
+    sed -i -e "s/  \+/ /g" $NEGEMOTESDIR/$i.txt
+    sed -i -e '/^\s*$/d' $NEGEMOTESDIR/$i.txt   
+done
+}
+
+#end multiBombastic algoritm
 function Build
 {
 echo "Compiling Rnnlm"
@@ -52,7 +88,7 @@ chmod +x predict
 cd ..
 
 echo "Downloading Twokenizer"
-wget twokenizer -O twokenize.py
+wget https://raw.githubusercontent.com/ManofWax/tesi/master/twokenizer/twokenize.py -O twokenize.py
 }
 
 function Tokenizer
@@ -232,6 +268,10 @@ case $key in
     STEPS="$2"
     shift
     ;;
+    -m|--multiBombastic)
+    STEPSMULTI="$2"
+    shift
+    ;;
     -i|--inputFile)
     INPUT="$2"
     shift
@@ -255,6 +295,10 @@ esac
 shift
 done
 
+if [ ! -z $STEPS ] && [ ! -z $STEPSMULTI ]; then
+    echo "you CANNOT use both -s and -m!"
+    exit
+fi
 if [ ! -z $TRAININGSIZETMP ]; then
     TRAININGSIZE=$TRAININGSIZETMP
 fi
@@ -262,7 +306,7 @@ if [ ! -z $TESTSIZETMP ]; then
     TESTSIZE=$TESTSIZETMP
 fi
 
-if [ -z $STEPS ]; then
+if [ -z $STEPS ] && [ -z $STEPSMULTI]; then
     echo "Shitty script fuck you. Usage:"
     echo "-s --steps: set the step starting point"
     echo "  -s 0    Build rnnlm, word2vec and liblinear"
@@ -274,7 +318,7 @@ if [ -z $STEPS ]; then
     echo "  -s 11   Sentence vectors/liblinear train and test"
     echo "  -s 19   Process result files and output accurancy"
     echo ""
-    echo "-m --multiAlanFreETIMPERA: using bombastic multi model alg. by Fre"
+    echo "-m --multiBombastic: using bombastic multi model alg. by Fre"
     echo "  -m 1 Tokenization and file cleanup (same as s -1)"
     echo "  -m 2 Split the corpus in different files, one for every emotes"
     echo "  -m 3 Rnnlm train for every emotes"
@@ -288,7 +332,8 @@ if [ -z $STEPS ]; then
     echo "-tt --test: number of test lines. Default: 25000"
     echo ""
     echo "-kv --keepVectors: don't clean up useless vectors during -s 3 (NOT YET IMPLEMENTED)"
-else
+fi
+if [ ! -z $STEPS ]; then
     case $STEPS in
 		0)
 		Build
@@ -319,4 +364,16 @@ else
         #doall
         ;;
     esac 
+fi
+if [ ! -z $STEPSMULTI ]; then
+    case $STEPSMULTI in
+        1)
+        Tokenizer $INPUT
+        ;;
+        2)
+        Multi_ProcessEmoticons $INPUT
+        ;;
+        *)
+        ;;
+    esac
 fi
