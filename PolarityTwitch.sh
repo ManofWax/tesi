@@ -58,30 +58,34 @@ done
 
 function Multi_RnnlmTrain
 {
-for i in `ls $POSEMOTESDIR`
+for i in `ls $POSEMOTESDIR/*.txt`
 do
-    _multi_rnnlmTrain $POSEMOTESDIR/$i
+    _multi_rnnlmTrain $i
     #aggiungi cleanup
 done
 
-for i in `ls $NEGEMOTESDIR`
+for i in `ls $NEGEMOTESDIR/*.txt`
 do
-    _multi_rnnlmTrain $NEGEMOTESDIR/$i
+    _multi_rnnlmTrain $i
 done
 }
 
 function _multi_rnnlmTrain
 {
-dir=$i
-head -n $TRAININGSIZE $dir/*.txt > $dir/train.tmp
-tail -n 200 $dir/*.txt > $dir/valid.tmp
-$RNNLMBINARY -rnnlm $dir/model -train $dir/train.tmp -valid $dir/valid.tmp -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+dir=$1
+head -n $TRAININGSIZE $dir > $dir.train.tmp
+tail -n 200 $dir > $dir.valid.tmp
+$RNNLMBINARY -rnnlm $dir.model -train $dir.train.tmp -valid $dir.valid.tmp -hidden 50 -direct-order 3 -direct 200 -class 100 -bptt 4 -bptt-block 10 -binary
+
+echo "Clean up"
+rm $POSEMOTESDIR/*.tmp $NEGEMOTESDIR/*.tmp $i.model.output.txt
 }
 
 function Multi_RnnlmTest
 {
-
+echo "bla"
 }
+
 #end multiBombastic algoritm
 function Build
 {
@@ -398,6 +402,9 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
         2)
         Multi_ProcessEmoticons $INPUT
+        ;;
+        3)
+        Multi_RnnlmTrain
         ;;
         *)
         ;;
