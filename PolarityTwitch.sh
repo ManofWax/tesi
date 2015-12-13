@@ -56,6 +56,32 @@ do
 done
 }
 
+function Multi_RnnlmTrain
+{
+for i in `ls $POSEMOTESDIR`
+do
+    _multi_rnnlmTrain $POSEMOTESDIR/$i
+    #aggiungi cleanup
+done
+
+for i in `ls $NEGEMOTESDIR`
+do
+    _multi_rnnlmTrain $NEGEMOTESDIR/$i
+done
+}
+
+function _multi_rnnlmTrain
+{
+dir=$i
+head -n $TRAININGSIZE $dir/*.txt > $dir/train.tmp
+tail -n 200 $dir/*.txt > $dir/valid.tmp
+$RNNLMBINARY -rnnlm $dir/model -train $dir/train.tmp -valid $dir/valid.tmp -hidden 50 -direct-order 3 -direct 200 -class 100 -debug 2 -bptt 4 -bptt-block 10 -binary
+}
+
+function Multi_RnnlmTest
+{
+
+}
 #end multiBombastic algoritm
 function Build
 {
