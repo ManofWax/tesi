@@ -336,7 +336,7 @@ if [ ! -z $TESTSIZETMP ]; then
     TESTSIZE=$TESTSIZETMP
 fi
 
-if [ -z $STEPS ] && [ -z $STEPSMULTI]; then
+if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "Shitty script fuck you. Usage:"
     echo "-s --steps: set the step starting point"
     echo "  -s 0    Build rnnlm, word2vec and liblinear"
