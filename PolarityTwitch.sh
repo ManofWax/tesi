@@ -112,8 +112,13 @@ done
 
 function Multi_PrintFinalResults
 {
-echo "not implemented"
+for i in *.score
+do
+    tail -n +4 $i > $i.tmp
+    mv $i.tmp $i
+done
 }
+
 
 #end multiBombastic algoritm
 function Build
@@ -437,6 +442,9 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
         4)
         Multi_RnnlmTest
+	;;
+	5)
+	Multi_PrintFinalResults
         ;;
         *)
         ;;
