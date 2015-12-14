@@ -83,7 +83,36 @@ rm $POSEMOTESDIR/*.tmp $NEGEMOTESDIR/*.tmp $i.model.output.txt
 
 function Multi_RnnlmTest
 {
-echo "bla"
+
+IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
+for i in "${arrayPos[@]}"
+do
+    echo "Processing $i"
+    head -n $(($TRAININGSIZE + 500)) $POSEMOTESDIR/$i.txt | tail -n 500 > $POSEMOTESDIR/$i.test
+done
+
+IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
+for i in "${arrayNeg[@]}"
+do
+    head -n $(($TRAININGSIZE + 500)) $NEGEMOTESDIR/$i.txt | tail -n 500 > $NEGEMOTESDIR/$i.test 
+done
+
+cat $POSEMOTESDIR/*.test $NEGEMOTESDIR/*.test > multiTest.txt
+awk 'BEGIN{a=0;}{print a " " $0; a++;}' < multiTest.txt > multi-id.txt
+
+for i in "${arrayPos[@]}"
+do
+    $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i -test multi-id.txt -nbest > $i.score
+done
+for i in "${arrayNeg[@]}"
+do
+    $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i -test multi-id.txt -nbest > $i.score
+done
+}
+
+function Multi_PrintFinalResults
+{
+
 }
 
 #end multiBombastic algoritm
@@ -405,6 +434,9 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
         3)
         Multi_RnnlmTrain
+        ;;
+        4)
+        Multi_PRintFinalResults
         ;;
         *)
         ;;
