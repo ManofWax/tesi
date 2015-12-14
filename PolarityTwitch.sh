@@ -102,10 +102,12 @@ awk 'BEGIN{a=0;}{print a " " $0; a++;}' < multiTest.txt > multi-id.txt
 
 for i in "${arrayPos[@]}"
 do
+    echo "Testing $i"
     $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
 for i in "${arrayNeg[@]}"
 do
+    echo "Testing $i"
     $RNNLMBINARY -rnnlm $NEGEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
 }
@@ -114,13 +116,28 @@ function Multi_PrintFinalResults
 {
 for i in *.score
 do
+    #deleting useless header
     tail -n +4 $i > $i.tmp
     mv $i.tmp $i
 done
+
+local emotesToPastePos="`echo $positiveEmotes | sed -e 's/|/.score /gI'`.score "
+local emotesToPasteNeg="`echo $negativeEmotes | sed -e 's/|/.score /gI'`.score"
+
+paste $emotesToPastePos > MULTI_RNNLM_POS
+paste $emotesToPasteNeg > MULTI_RNNLM_NEG
+
+#I select the highest score from pos and the highest score from neg
+awk '{m=$1;for(i=1;<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
+awk '{m=$1;for(i=1;<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_NEG > RES_NEG
+echo "Writing result to RNNLM-SCORE"
+paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
+
+echo "Clean up"
+rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
-
-
 #end multiBombastic algoritm
+
 function Build
 {
 echo "Compiling Rnnlm"
@@ -383,7 +400,8 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -s 19   Process result files and output accurancy"
     echo ""
     echo "-m --multiBombastic: using bombastic multi model alg. by Fre"
-    echo "  -m 1 Tokenization and file cleanup (same as s -1)"
+    echo "  -m 0 Build rnnlm, word2vec and liblinear (same as -s 0)"
+    echo "  -m 1 Tokenization and file cleanup (same as -s 1)"
     echo "  -m 2 Split the corpus in different files, one for every emotes"
     echo "  -m 3 Rnnlm train for every emotes"
     echo "  -m 4 Rnnlm test using the bombastic algoritm"
@@ -431,6 +449,9 @@ if [ ! -z $STEPS ]; then
 fi
 if [ ! -z $STEPSMULTI ]; then
     case $STEPSMULTI in
+        0)
+        Build
+        ;;
         1)
         Tokenizer $INPUT
         ;;
