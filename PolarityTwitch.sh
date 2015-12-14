@@ -110,6 +110,9 @@ do
     echo "Testing $i"
     $RNNLMBINARY -rnnlm $NEGEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
+
+echo "Clean up"
+rm multiTest.txt multi-id.txt
 }
 
 function Multi_PrintFinalResults
@@ -127,9 +130,9 @@ local emotesToPasteNeg="`echo $negativeEmotes | sed -e 's/|/.score /gI'`.score"
 paste $emotesToPastePos > MULTI_RNNLM_POS
 paste $emotesToPasteNeg > MULTI_RNNLM_NEG
 
-#I select the highest score from pos and the highest score from neg
-awk '{m=$1;for(i=1;<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
-awk '{m=$1;for(i=1;<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_NEG > RES_NEG
+#Select the highest score from pos and the highest score from neg
+awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
+awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_NEG > RES_NEG
 echo "Writing result to RNNLM-SCORE"
 paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
