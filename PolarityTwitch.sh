@@ -102,17 +102,17 @@ awk 'BEGIN{a=0;}{print a " " $0; a++;}' < multiTest.txt > multi-id.txt
 
 for i in "${arrayPos[@]}"
 do
-    $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i -test multi-id.txt -nbest > $i.score
+    $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
 for i in "${arrayNeg[@]}"
 do
-    $RNNLMBINARY -rnnlm $POSEMOTESDIR/$i -test multi-id.txt -nbest > $i.score
+    $RNNLMBINARY -rnnlm $NEGEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
 }
 
 function Multi_PrintFinalResults
 {
-
+echo "not implemented"
 }
 
 #end multiBombastic algoritm
@@ -436,7 +436,7 @@ if [ ! -z $STEPSMULTI ]; then
         Multi_RnnlmTrain
         ;;
         4)
-        Multi_PRintFinalResults
+        Multi_RnnlmTest
         ;;
         *)
         ;;
