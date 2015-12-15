@@ -1,6 +1,9 @@
 #costants
 positiveEmotes="kappa|4head|kreygasm|elegiggle|kappapride|kreygasm|heyguys|anele"
 negativeEmotes="residentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
+IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
+IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
+
 EMOTESDIR="Emotes"
 POSEMOTESDIR="$EMOTESDIR/pos"
 NEGEMOTESDIR="$EMOTESDIR/neg"
@@ -15,6 +18,7 @@ RNNLMBINARY="rnnlm/rnnlm"
 WORD2VECBINARY="word2vec/word2vec"
 LIBLINEARTRAINBINARY="liblinear/train"
 LIBLINEARPREDICTBINARY="liblinear/predict"
+MULTIRNNLMSCOREDIR="MultiRnnlmScore"
 
 #helper functions
 function CheckFile {
@@ -83,6 +87,9 @@ rm $POSEMOTESDIR/*.tmp $NEGEMOTESDIR/*.tmp $i.model.output.txt
 
 function Multi_RnnlmTest
 {
+mkdir $MULTIRNNLMSCOREDIR
+echo "Deleting old scores"
+rm $MULTIRNNLMSCOREDIR/*.score
 
 IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
 for i in "${arrayPos[@]}"
@@ -111,33 +118,47 @@ do
     $RNNLMBINARY -rnnlm $NEGEMOTESDIR/$i.txt.model -test multi-id.txt -nbest > $i.score
 done
 
+mv *.score $MULTIRNNLMSCOREDIR
+
 echo "Clean up"
 rm multiTest.txt multi-id.txt
 }
 
 function Multi_PrintFinalResults
 {
-for i in *.score
+for i in $MULTIRNNLMSCOREDIR/*.score
 do
-    #deleting useless header
-    tail -n +4 $i > $i.tmp
-    mv $i.tmp $i
+    if [ `head -n 1 $i | wc -w` -gt 2 ]; then
+        #deleting useless header
+        tail -n +4 $i > $i.tmp
+        mv $i.tmp $i
+    fi
 done
 
-local emotesToPastePos="`echo $positiveEmotes | sed -e 's/|/.score /gI'`.score "
-local emotesToPasteNeg="`echo $negativeEmotes | sed -e 's/|/.score /gI'`.score"
+#local emotesToPastePos="`echo $positiveEmotes | sed -e 's/|/.score /gI'`.score "
+#local emotesToPasteNeg="`echo $negativeEmotes | sed -e 's/|/.score /gI'`.score"
 
-paste $emotesToPastePos > MULTI_RNNLM_POS
-paste $emotesToPasteNeg > MULTI_RNNLM_NEG
+#paste $emotesToPastePos > MULTI_RNNLM_POS
+#paste $emotesToPasteNeg > MULTI_RNNLM_NEG
+
+#Every pos emotes vs every neg
+for i in "${arrayPos[@]}"
+do
+    for y in "${arrayNeg[@]}"
+    do
+        paste $MULTIRNNLMSCOREDIR/$i.score $MULTIRNNLMSCOREDIR/$y.score | awk '{print $1 " " $2 " " $1/$2;}' > $1-$2-SCORE
+    done
+done
 
 #Select the highest score from pos and the highest score from neg
-awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
-awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_NEG > RES_NEG
-echo "Writing result to RNNLM-SCORE"
-paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
+#IT DOESNT WORK FUCK MY LIFE
+#awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
+#awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_NEG > RES_NEG
+#echo "Writing result to RNNLM-SCORE"
+#paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
-echo "Clean up"
-rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
+#echo "Clean up"
+#rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
 #end multiBombastic algoritm
 
