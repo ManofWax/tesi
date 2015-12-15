@@ -148,7 +148,7 @@ do
     for y in "${arrayNeg[@]}"
     do
         paste $MULTIRNNLMSCOREDIR/$i.score $MULTIRNNLMSCOREDIR/$y.score \
-        | awk '{print $1/$2;}' > $MULTIRNNLMSCOREDIR/$1.$2.SCORE
+        | awk '{print $1/$2;}' > $MULTIRNNLMSCOREDIR/$i.$y.SCORE
     done
 done
 
