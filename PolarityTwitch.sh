@@ -1,5 +1,5 @@
 #costants
-positiveEmotes="kappa|4head|kreygasm|elegiggle|kappapride|kreygasm|heyguys|anele"
+positiveEmotes="kappa|4head|elegiggle|kappapride|kreygasm|heyguys|anele"
 negativeEmotes="residentsleeper|pjsalt|wutface|notlikethis|failfish|biblethump|dansgame|babyrage"
 IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
 IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
@@ -160,8 +160,8 @@ BEGIN{cn=0; corr=0;} \
   tmp_pos=0;
   tmp_neg=0;
   for(i=0;i<NF;i++) ($i<1) ? tmp_pos++ : tmp_neg++; \    
-  if (tmp_pos<=tmp_neg) if (cn<size) corr++; \
-  if (tmp_pos>tmp_neg) if (cn>=size) corr++; \
+  if (tmp_pos<=tmp_neg) if (cn<3500) corr++; \
+  if (tmp_pos>tmp_neg) if (cn>=3500) corr++; \
   cn++; \
 } \
 END{print "RNNLM accuracy: " corr/cn*100 "%";}'
@@ -173,7 +173,8 @@ END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 #echo "Writing result to RNNLM-SCORE"
 #paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
-#echo "Clean up"
+echo "Clean up"
+rm $MULTIRNNLMSCOREDIR/*.SCORE
 #rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
 #end multiBombastic algoritm
