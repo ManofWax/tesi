@@ -129,9 +129,10 @@ function Multi_PrintFinalResults
 for i in $MULTIRNNLMSCOREDIR/*.score
 do
     if [ `head -n 1 $i | wc -w` -gt 2 ]; then
-        #deleting useless header
+        #deleting useless header and footer
         tail -n +4 $i > $i.tmp
-        mv $i.tmp $i
+        head -n -4 $i.tmp > $i
+        rm $i.tmp
     fi
 done
 
@@ -146,9 +147,23 @@ for i in "${arrayPos[@]}"
 do
     for y in "${arrayNeg[@]}"
     do
-        paste $MULTIRNNLMSCOREDIR/$i.score $MULTIRNNLMSCOREDIR/$y.score | awk '{print $1 " " $2 " " $1/$2;}' > $1-$2-SCORE
+        paste $MULTIRNNLMSCOREDIR/$i.score $MULTIRNNLMSCOREDIR/$y.score | awk '{print $1/$2;}' > $1-$2-SCORE
     done
 done
+
+paste $MULTIRNNLMSCOREDIR/*-SCORE > RNNLM-SCORE
+
+cat RNNLM-SCORE | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  tmp_pos=0;
+  tmp_neg=0;
+  for(i=0;i<NF;i++) ($i<1) ? tmp_pos++ else tmp_neg++ \    
+  if (tmp_pos<=tmp_neg) if (cn<size) corr++; \
+  if (tmp_pos>tmp_neg) if (cn>=size) corr++; \
+  cn++; \
+} \
+END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 
 #Select the highest score from pos and the highest score from neg
 #IT DOESNT WORK FUCK MY LIFE
