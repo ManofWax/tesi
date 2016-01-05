@@ -174,8 +174,8 @@ cat multiTest.txt | awk 'BEGIN{a=0;}{if (a<3500) printf "1 "; else printf "-1 ";
 for i in $MULTILIBLINEARSCOREDIR/*.logreg
 do
     echo "testing $i"
-    $LIBLINEARPREDICTBINARY -b 1 test.txt $MULTILIBLINEARSCOREDIR/$i out.tmp
-    tail -n $((3500 * 2)) out.tmp > $MULTILIBLINEARSCOREDIR/$i.out
+    $LIBLINEARPREDICTBINARY -b 1 test.txt $i out.tmp
+    tail -n $((3500 * 2)) out.tmp > $i.out
 done
 
 echo "Clean up"
