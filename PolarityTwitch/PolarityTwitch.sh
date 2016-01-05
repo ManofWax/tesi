@@ -19,7 +19,7 @@ WORD2VECBINARY="word2vec/word2vec"
 LIBLINEARTRAINBINARY="liblinear/train"
 LIBLINEARPREDICTBINARY="liblinear/predict"
 MULTIRNNLMSCOREDIR="MultiRnnlmScore"
-$MULTILIBLINEARSCOREDIR="MultiLibLinearScore"
+MULTILIBLINEARSCOREDIR="MultiLibLinearScore"
 
 #helper functions
 function CheckFile {
