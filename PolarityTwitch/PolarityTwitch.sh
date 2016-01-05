@@ -19,6 +19,7 @@ WORD2VECBINARY="word2vec/word2vec"
 LIBLINEARTRAINBINARY="liblinear/train"
 LIBLINEARPREDICTBINARY="liblinear/predict"
 MULTIRNNLMSCOREDIR="MultiRnnlmScore"
+$MULTILIBLINEARSCOREDIR="MultiLibLinearScore"
 
 #helper functions
 function CheckFile {
@@ -132,6 +133,55 @@ echo "Clean up"
 rm vectors.txt $vecRes vec-id.txt
 }
 
+function Multi_LiblinearExec
+{
+mkdir $MULTILIBLINEARSCOREDIR
+echo "Deleting old scores"
+rm $MULTILIBLINEARSCOREDIR/*.logreg
+
+#Every pos emotes vs every neg
+for i in "${arrayPos[@]}"
+do
+    for y in "${arrayNeg[@]}"
+    do
+        head -n $TRAININGSIZE $POSEMOTESDIR/$i.vec > pos_vectors.tmp
+        head -n $TRAININGSIZE $NEGEMOTESDIR/$i.vec > neg_vectors.tmp
+        #todo fixed hardcoded 12500
+        cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<12500) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > train.txt
+        $LIBLINEARTRAINBINARY -s 0 train.txt model.logreg
+        mv model.logreg $MULTILIBLINEARSCOREDIR/$i.$y.logreg
+    done
+done
+
+IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
+for i in "${arrayPos[@]}"
+do
+    echo "Processing $i"
+    head -n $(($TRAININGSIZE + 500)) $POSEMOTESDIR/$i.vec | tail -n 500 > $POSEMOTESDIR/$i.vectest
+done
+
+IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
+for i in "${arrayNeg[@]}"
+do
+    echo "Processing $i"
+    head -n $(($TRAININGSIZE + 500)) $NEGEMOTESDIR/$i.vec | tail -n 500 > $NEGEMOTESDIR/$i.vectest 
+done
+
+cat $POSEMOTESDIR/*.vectest $NEGEMOTESDIR/*.vectest > multiTest.txt
+
+cat multiTest.txt | awk 'BEGIN{a=0;}{if (a<3500) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > test.txt
+
+for i in $MULTILIBLINEARSCOREDIR/*.logreg
+do
+    echo "testing $i"
+    $LIBLINEARPREDICTBINARY -b 1 test.txt $MULTILIBLINEARSCOREDIR/$i out.tmp
+    tail -n $((3500 * 2)) out.tmp > $MULTILIBLINEARSCOREDIR/$i.out
+done
+
+echo "Clean up"
+rm multiTest.txt out.tmp
+}
+
 function Multi_RnnlmTest
 {
 mkdir $MULTIRNNLMSCOREDIR
@@ -213,6 +263,24 @@ BEGIN{cn=0; corr=0;} \
 } \
 END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 
+for i in $MULTILIBLINEARSCOREDIR/*.logreg
+do
+    cat $MULTILIBLINEARSCOREDIR/$i | awk '{print $2;}' > $i.logregtmp
+done
+
+paste *.logregtmp > SENTENCE-VECTOR.LOGREG
+cat SENTENCE-VECTOR.LOGREG | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  tmp_pos=0;
+  tmp_neg=0;
+  for(i=0;i<NF;i++) ($i<0.5) ? tmp_pos++ : tmp_neg++; \    
+  if (tmp_pos>=tmp_neg) if (cn<3500) corr++; \
+  if (tmp_pos<tmp_neg) if (cn>=3500) corr++; \
+  cn++; \
+} \
+END{print "LOGREG accuracy: " corr/cn*100 "%";}'
+
 #Select the highest score from pos and the highest score from neg
 #IT DOESNT WORK FUCK MY LIFE
 #awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
@@ -221,7 +289,7 @@ END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 #paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
 echo "Clean up"
-rm $MULTIRNNLMSCOREDIR/*.SCORE
+rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE SENTENCE-VECTOR.LOGREG *.logregtmp
 #rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
 #end multiBombastic algoritm
@@ -458,6 +526,7 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -m 3 Rnnlm train for every emotes"
     echo "  -m 4 Rnnlm test using the bombastic algoritm"
     echo "  -m 5 Word2Vec"
+    echo "  -m 6 SentencVectors/Liblinear train and test"
     echo "  -m 8 Print Final Results"
     echo "  -m 9 Do step 1,2,3,4"
     echo ""
@@ -514,6 +583,9 @@ if [ ! -z $STEPSMULTI ]; then
 	    ;;
         5)
         Multi_Word2VecExec
+        ;;
+        6)
+        Multi_liblinearExec
         ;;
 	    8)
 	    Multi_PrintFinalResults
