@@ -29,7 +29,10 @@ fi
 }
 #end helper functions
 
+#
 #multiBombastic algoritm
+#
+
 function Multi_ProcessEmoticons
 {
 echo "Creating Emoticons Dir"
@@ -504,9 +507,9 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
         4)
         Multi_RnnlmTest
-	;;
-	5)
-	Multi_PrintFinalResults
+	    ;;
+	    5)
+	    Multi_PrintFinalResults
         ;;
         *)
         ;;
