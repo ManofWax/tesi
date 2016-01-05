@@ -145,7 +145,7 @@ do
     for y in "${arrayNeg[@]}"
     do
         head -n $TRAININGSIZE $POSEMOTESDIR/$i.vec > pos_vectors.tmp
-        head -n $TRAININGSIZE $NEGEMOTESDIR/$i.vec > neg_vectors.tmp
+        head -n $TRAININGSIZE $NEGEMOTESDIR/$y.vec > neg_vectors.tmp
         #todo fixed hardcoded 12500
         cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<12500) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > train.txt
         $LIBLINEARTRAINBINARY -s 0 train.txt model.logreg
@@ -585,7 +585,7 @@ if [ ! -z $STEPSMULTI ]; then
         Multi_Word2VecExec
         ;;
         6)
-        Multi_liblinearExec
+        Multi_LiblinearExec
         ;;
 	    8)
 	    Multi_PrintFinalResults
