@@ -113,7 +113,7 @@ echo "Splitting vectors"
 for i in "${arrayPos[@]}"
 do
     echo "Processing $i"
-    local len=`wc -l < $i`
+    local len=`wc -l < $POSEMOTESDIR/$i`
     head -n $len $vecRes > $POSEMOTESDIR/$i.vec
     tail -n +$len $vecRes > $vecRes.tmp
     mv $vecRes.tmp $vecRes
@@ -122,7 +122,7 @@ done
 for i in "${arrayNeg[@]}"
 do
     echo "Processing $i"
-    local len=`wc -l < $i`
+    local len=`wc -l < $POSEMOTESDIR/$i`
     head -n $len $vecRes > $NEGEMOTESDIR/$i.vec
     tail -n +$len $vecRes > $vecRes.tmp
     mv $vecRes.tmp $vecRes
