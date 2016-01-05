@@ -274,7 +274,7 @@ BEGIN{cn=0; corr=0;} \
 { \
   tmp_pos=0;
   tmp_neg=0;
-  for(i=0;i<NF;i++) ($i<0.5) ? tmp_pos++ : tmp_neg++; \    
+  for(i=0;i<NF;i++) ($i>0.5) ? tmp_pos++ : tmp_neg++; \    
   if (tmp_pos>=tmp_neg) if (cn<3500) corr++; \
   if (tmp_pos<tmp_neg) if (cn>=3500) corr++; \
   cn++; \
