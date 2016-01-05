@@ -41,9 +41,7 @@ echo "Creating Pos and Neg emoticons Dir"
 mkdir $POSEMOTESDIR
 mkdir $NEGEMOTESDIR
 
-#wtf is this magic?!
-IFS='|' read -r -a array <<< "$positiveEmotes"
-for i in "${array[@]}"
+for i in "${arrayPos[@]}"
 do
     echo "Processing $i"
     grep -E -i $i $1 > $POSEMOTESDIR/$i.txt
@@ -52,8 +50,7 @@ do
     sed -i -e '/^\s*$/d' $POSEMOTESDIR/$i.txt   
 done
 
-IFS='|' read -r -a array <<< "$negativeEmotes"
-for i in "${array[@]}"
+for i in "${arrayNeg[@]}"
 do
     echo "Processing $i"
     grep -E -i $i $1 > $NEGEMOTESDIR/$i.txt
@@ -86,6 +83,53 @@ $RNNLMBINARY -rnnlm $dir.model -train $dir.train.tmp -valid $dir.valid.tmp -hidd
 
 echo "Clean up"
 rm $POSEMOTESDIR/*.tmp $NEGEMOTESDIR/*.tmp $i.model.output.txt
+}
+
+function Multi_Word2VecExec
+{
+local vecRes="sentence_vectors.txt"
+
+for i in "${arrayPos[@]}"
+do
+    echo "Processing $i"
+    cat $POSEMOTESDIR/$i.txt >> $vecRes 
+done
+
+for i in "${arrayNeg[@]}"
+do
+    echo "Processing $i"
+    cat $NEGEMOTESDIR/$i.txt >> $vecRes 
+done
+
+cat $vecRes | awk 'BEGIN{a=0;}{print "_*" a " " $0; a++;}' > vec-id.txt
+
+echo "Start computating Vectors"
+time $WORD2VECBINARY -train vec-id.txt -output vectors.txt -cbow 0 -size 100 -window 10 -negative 5 -hs 0 -sample 1e-4 -threads 40 -binary 0 -iter 20 -min-count 1 -sentence-vectors 1
+
+echo "Keeping only sentence vectors"
+grep '^_\*' vectors.txt > $vecRes
+
+echo "Splitting vectors"
+for i in "${arrayPos[@]}"
+do
+    echo "Processing $i"
+    local len=`wc -l < $i`
+    head -n $len $vecRes > $POSEMOTESDIR/$i.vec
+    tail -n +$len $vecRes > $vecRes.tmp
+    mv $vecRes.tmp $vecRes
+done
+
+for i in "${arrayNeg[@]}"
+do
+    echo "Processing $i"
+    local len=`wc -l < $i`
+    head -n $len $vecRes > $NEGEMOTESDIR/$i.vec
+    tail -n +$len $vecRes > $vecRes.tmp
+    mv $vecRes.tmp $vecRes
+done
+
+echo "Clean up"
+rm vectors.txt $vecRes vec-id.txt
 }
 
 function Multi_RnnlmTest
@@ -413,6 +457,8 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -m 2 Split the corpus in different files, one for every emotes"
     echo "  -m 3 Rnnlm train for every emotes"
     echo "  -m 4 Rnnlm test using the bombastic algoritm"
+    echo "  -m 5 Word2Vec"
+    echo "  -m 8 Print Final Results"
     echo "  -m 9 Do step 1,2,3,4"
     echo ""
     echo "-i --input: input text file. In step -s 1 IT WILL BE OVERWRITTEN"
@@ -466,7 +512,10 @@ if [ ! -z $STEPSMULTI ]; then
         4)
         Multi_RnnlmTest
 	    ;;
-	    5)
+        5)
+        Multi_Word2VecExec
+        ;;
+	    8)
 	    Multi_PrintFinalResults
         ;;
         *)
