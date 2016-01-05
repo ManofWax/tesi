@@ -137,19 +137,21 @@ function Multi_LiblinearExec
 {
 mkdir $MULTILIBLINEARSCOREDIR
 echo "Deleting old scores"
-rm $MULTILIBLINEARSCOREDIR/*.logreg
+rm $MULTILIBLINEARSCOREDIR/*.logreg $MULTILIBLINEARSCOREDIR/*.out
 
 #Every pos emotes vs every neg
 for i in "${arrayPos[@]}"
 do
     for y in "${arrayNeg[@]}"
     do
+        if [ `wc -l < $POSEMOTESDIR/$i.vec` -gt $TRAININGSIZE -a `wc -l < $NEGEMOTESDIR/$y.vec` -gt $TRAININGSIZE ]; then
         head -n $TRAININGSIZE $POSEMOTESDIR/$i.vec > pos_vectors.tmp
         head -n $TRAININGSIZE $NEGEMOTESDIR/$y.vec > neg_vectors.tmp
         #todo fixed hardcoded 12500
         cat pos_vectors.tmp neg_vectors.tmp | awk 'BEGIN{a=0;}{if (a<12500) printf "1 "; else printf "-1 "; for (b=1; b<NF; b++) printf b ":" $(b+1) " "; print ""; a++;}' > train.txt
         $LIBLINEARTRAINBINARY -s 0 train.txt model.logreg
         mv model.logreg $MULTILIBLINEARSCOREDIR/$i.$y.logreg
+        fi
     done
 done
 
