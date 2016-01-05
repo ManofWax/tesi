@@ -263,7 +263,7 @@ BEGIN{cn=0; corr=0;} \
 } \
 END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 
-for i in $MULTILIBLINEARSCOREDIR/*.logreg
+for i in $MULTILIBLINEARSCOREDIR/*.logreg.out
 do
     cat $i | awk '{print $2;}' > $i.logregtmp
 done
