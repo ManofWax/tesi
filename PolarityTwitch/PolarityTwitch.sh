@@ -179,7 +179,7 @@ do
 done
 
 echo "Clean up"
-rm multiTest.txt out.tmp
+rm multiTest.txt out.tmp pos_vectors.tmp neg_vectors.tmp
 }
 
 function Multi_RnnlmTest
@@ -265,10 +265,10 @@ END{print "RNNLM accuracy: " corr/cn*100 "%";}'
 
 for i in $MULTILIBLINEARSCOREDIR/*.logreg
 do
-    cat $MULTILIBLINEARSCOREDIR/$i | awk '{print $2;}' > $i.logregtmp
+    cat $i | awk '{print $2;}' > $i.logregtmp
 done
 
-paste *.logregtmp > SENTENCE-VECTOR.LOGREG
+paste $MULTILIBLINEARSCOREDIR/*.logregtmp > SENTENCE-VECTOR.LOGREG
 cat SENTENCE-VECTOR.LOGREG | awk '\
 BEGIN{cn=0; corr=0;} \
 { \
@@ -289,7 +289,7 @@ END{print "LOGREG accuracy: " corr/cn*100 "%";}'
 #paste RES_POS RES_NEG | awk '{print $1 " " $2 " " $1/$2;}' > RNNLM-SCORE
 
 echo "Clean up"
-rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE SENTENCE-VECTOR.LOGREG *.logregtmp
+rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE SENTENCE-VECTOR.LOGREG $MULTILIBLINEARSCOREDIR/*.logregtmp
 #rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
 #end multiBombastic algoritm
