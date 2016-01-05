@@ -182,40 +182,6 @@ rm $MULTIRNNLMSCOREDIR/*.SCORE
 }
 #end multiBombastic algoritm
 
-function Build
-{
-echo "Compiling Rnnlm"
-mkdir rnnlm
-cd rnnlm
-wget https://github.com/ManofWax/tesi/blob/master/Tools/rnnlm-0.4b.tgz?raw=true -O rnnlm.tgz
-tar --strip-components=1 -xvf rnnlm.tgz
-g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math -c rnnlmlib.cpp
-g++ -lm -O3 -march=native -Wall -funroll-loops -ffast-math rnnlm.cpp rnnlmlib.o -o rnnlm
-chmod +x rnnlm
-cd ..
-
-echo "Compiling word2vec with sentence vectors patch"
-mkdir word2vec
-cd word2vec
-wget https://github.com/ManofWax/tesi/blob/master/Tools/word2vec.c?raw=true -O word2vec.c
-gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
-chmod +x word2vec
-cd ..
-
-echo "Compiling liblinear"
-mkdir liblinear
-cd liblinear
-wget https://github.com/ManofWax/tesi/blob/master/Tools/liblinear-2.1.tar.gz?raw=true -O liblinear.tar.gz
-tar --strip-components=1 -xvf liblinear.tar.gz
-make
-chmod +x train
-chmod +x predict
-cd ..
-
-echo "Downloading Twokenizer"
-wget https://raw.githubusercontent.com/ManofWax/tesi/master/twokenizer/twokenize.py -O twokenize.py
-}
-
 function Tokenizer
 {
 local twokenizeOutput=$1.out
@@ -434,7 +400,6 @@ fi
 if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "Shitty script fuck you. Usage:"
     echo "-s --steps: set the step starting point"
-    echo "  -s 0    Build rnnlm, word2vec and liblinear"
     echo "  -s 1    Tokenization and file cleanup"
     echo "  -s 2    Split the corpus in pos, neg and neutral files"
     echo "  -s 3    Calculate paragraph vector. It will take a lot of time and a lot of memory"
@@ -444,7 +409,6 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -s 19   Process result files and output accurancy"
     echo ""
     echo "-m --multiBombastic: using bombastic multi model alg. by Fre"
-    echo "  -m 0 Build rnnlm, word2vec and liblinear (same as -s 0)"
     echo "  -m 1 Tokenization and file cleanup (same as -s 1)"
     echo "  -m 2 Split the corpus in different files, one for every emotes"
     echo "  -m 3 Rnnlm train for every emotes"
@@ -461,9 +425,6 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
 fi
 if [ ! -z $STEPS ]; then
     case $STEPS in
-		0)
-		Build
-		;;
         1)
         Tokenizer $INPUT
         ;;
@@ -493,9 +454,6 @@ if [ ! -z $STEPS ]; then
 fi
 if [ ! -z $STEPSMULTI ]; then
     case $STEPSMULTI in
-        0)
-        Build
-        ;;
         1)
         Tokenizer $INPUT
         ;;
