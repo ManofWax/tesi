@@ -122,7 +122,7 @@ done
 for i in "${arrayNeg[@]}"
 do
     echo "Processing $i"
-    local len=`wc -l < $POSEMOTESDIR/$i.txt`
+    local len=`wc -l < $NEGEMOTESDIR/$i.txt`
     head -n $len $vecRes > $NEGEMOTESDIR/$i.vec
     tail -n +$len $vecRes > $vecRes.tmp
     mv $vecRes.tmp $vecRes
