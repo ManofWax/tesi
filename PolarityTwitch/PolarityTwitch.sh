@@ -186,24 +186,30 @@ rm multiTest.txt out.tmp pos_vectors.tmp neg_vectors.tmp
 
 function Multi_RnnlmTest
 {
-mkdir $MULTIRNNLMSCOREDIR
-echo "Deleting old scores"
-rm $MULTIRNNLMSCOREDIR/*.score
+#if test file is zero I create test files from the training input
+if [ -z $1 ]; then
+    mkdir $MULTIRNNLMSCOREDIR
+    echo "Deleting old scores"
+    rm $MULTIRNNLMSCOREDIR/*.score
 
-IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
-for i in "${arrayPos[@]}"
-do
-    echo "Processing $i"
-    head -n $(($TRAININGSIZE + 500)) $POSEMOTESDIR/$i.txt | tail -n 500 > $POSEMOTESDIR/$i.test
-done
+    IFS='|' read -r -a arrayPos <<< "$positiveEmotes"
+    for i in "${arrayPos[@]}"
+    do
+        echo "Processing $i"
+        head -n $(($TRAININGSIZE + 500)) $POSEMOTESDIR/$i.txt | tail -n 500 > $POSEMOTESDIR/$i.test
+    done
 
-IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
-for i in "${arrayNeg[@]}"
-do
-    head -n $(($TRAININGSIZE + 500)) $NEGEMOTESDIR/$i.txt | tail -n 500 > $NEGEMOTESDIR/$i.test 
-done
+    IFS='|' read -r -a arrayNeg <<< "$negativeEmotes"
+    for i in "${arrayNeg[@]}"
+    do
+        head -n $(($TRAININGSIZE + 500)) $NEGEMOTESDIR/$i.txt | tail -n 500 > $NEGEMOTESDIR/$i.test 
+    done
 
-cat $POSEMOTESDIR/*.test $NEGEMOTESDIR/*.test > multiTest.txt
+    cat $POSEMOTESDIR/*.test $NEGEMOTESDIR/*.test > multiTest.txt
+else
+    cat $1 > multiTest.txt
+fi
+
 awk 'BEGIN{a=0;}{print a " " $0; a++;}' < multiTest.txt > multi-id.txt
 
 for i in "${arrayPos[@]}"
@@ -431,6 +437,7 @@ echo "Start computating Vectors"
 time $WORD2VECBINARY -train vec-id.txt -output vectors.txt -cbow 0 -size 100 -window 10 -negative 5 -hs 0 -sample 1e-4 -threads 40 -binary 0 -iter 20 -min-count 1 -sentence-vectors 1
 
 echo "Keeping only sentence vectors"
+
 grep '^_\*' vectors.txt > $vecRes
 
 echo "Splitting vectors in pos, neg files"
@@ -490,6 +497,48 @@ BEGIN{cn=0; corr=0;} \
   cn++; \
 } \
 END{print "FINAL accuracy: " corr/cn*100 "%";}'
+}
+
+fuction Multi_test
+{
+Tokenizer $1
+#train with rnnlm
+Multi_RnnlmTrain $1
+
+for i in $MULTIRNNLMSCOREDIR/*.score
+do
+    if [ `head -n 1 $i | wc -w` -gt 2 ]; then
+        #deleting useless header and footer
+        tail -n +4 $i > $i.tmp
+        head -n -4 $i.tmp > $i
+        rm $i.tmp
+    fi
+done
+
+for i in "${arrayPos[@]}"
+do
+    for y in "${arrayNeg[@]}"
+    do
+        paste $MULTIRNNLMSCOREDIR/$i.score $MULTIRNNLMSCOREDIR/$y.score \
+        | awk '{print $1/$2;}' > $MULTIRNNLMSCOREDIR/$i.$y.SCORE
+    done
+done
+
+paste $MULTIRNNLMSCOREDIR/*.SCORE > RNNLM-SCORE
+
+cat RNNLM-SCORE | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  tmp_pos=0;
+  tmp_neg=0;
+  for(i=0;i<NF;i++) ($i<1) ? tmp_pos++ : tmp_neg++; \    
+  if (tmp_pos>=tmp_neg) print 1; \
+  if (tmp_pos<tmp_neg) print -1; \
+  cn++; \
+}' > TESTRES.txt
+
+echo "Clean up"
+rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE 
 }
 
 #MAIN PROGRAM START
@@ -559,6 +608,7 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -m 6 SentencVectors/Liblinear train and test"
     echo "  -m 8 Print Final Results"
     echo "  -m 9 Do step 1,2,3,4"
+    echo "  -m 99 testing a file passed with -i"
     echo ""
     echo "-i --input: input text file. In step -s 1 IT WILL BE OVERWRITTEN"
     echo ""
@@ -619,6 +669,9 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
 	    8)
 	    Multi_PrintFinalResults
+        ;;
+        99)
+        Multi_test $INPUT
         ;;
         *)
         ;;
