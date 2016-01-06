@@ -502,8 +502,10 @@ END{print "FINAL accuracy: " corr/cn*100 "%";}'
 fuction Multi_test
 {
 Tokenizer $1
+cat $1 | awk '{$1=""; print $0}' > test.tmp
+
 #train with rnnlm
-Multi_RnnlmTrain $1
+Multi_RnnlmTrain test.tmp
 
 for i in $MULTIRNNLMSCOREDIR/*.score
 do
@@ -535,10 +537,13 @@ BEGIN{cn=0; corr=0;} \
   if (tmp_pos>=tmp_neg) print 1; \
   if (tmp_pos<tmp_neg) print -1; \
   cn++; \
-}' > TESTRES.txt
+}' > TESTRES.txt.tmp
 
+cat $1 | awk '{print $1}' > timestamp.tmp
+paste timestamp.tmp TESTRES.txt.tmp > TESTRES.txt
+ 
 echo "Clean up"
-rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE 
+rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE test.tmp TESTRES.txt.tmp timestamp.tmp
 }
 
 #MAIN PROGRAM START
