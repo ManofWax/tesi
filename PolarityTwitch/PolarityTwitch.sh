@@ -504,8 +504,8 @@ function Multi_test
 Tokenizer $1
 cat $1 | awk '{$1=""; print $0}' > test.tmp
 
-#train with rnnlm
-Multi_RnnlmTrain test.tmp
+#test with rnnlm
+Multi_RnnlmTest test.tmp
 
 for i in $MULTIRNNLMSCOREDIR/*.score
 do
