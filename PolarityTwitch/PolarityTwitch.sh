@@ -499,7 +499,7 @@ BEGIN{cn=0; corr=0;} \
 END{print "FINAL accuracy: " corr/cn*100 "%";}'
 }
 
-fuction Multi_test
+function Multi_test
 {
 Tokenizer $1
 cat $1 | awk '{$1=""; print $0}' > test.tmp
