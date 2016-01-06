@@ -283,6 +283,35 @@ BEGIN{cn=0; corr=0;} \
 } \
 END{print "LOGREG accuracy: " corr/cn*100 "%";}'
 
+cat RNNLM-SCORE | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  tmp_pos=0;
+  tmp_neg=0;
+  for(i=0;i<NF;i++) ($i<1) ? tmp_pos++ : tmp_neg++; \    
+  if (tmp_pos>=tmp_neg) print tmp_pos; \
+  if (tmp_pos<tmp_neg) print -tmp_neg; \
+}' > rnnlm-score.tmp
+
+cat SENTENCE-VECTOR.LOGREG | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  tmp_pos=0;
+  tmp_neg=0;
+  for(i=0;i<NF;i++) ($i>0.5) ? tmp_pos++ : tmp_neg++; \    
+  if (tmp_pos>=tmp_neg) print tmp_pos; \
+  if (tmp_pos<tmp_neg) print -tmp_neg; \
+}' > sentence-vector.tmp
+
+paste rnnlm-score.tmp sentence-vector.tmp > total.score
+cat total.score | awk '\
+BEGIN{cn=0; corr=0;} \
+{ \
+  if($0 - $1 > 0) if(cn<3500) corr++;\
+  if($0 - $1 < 0) if(cn>=3500) corr++;\
+  cn++; \
+} \
+END{print "LOGREG accuracy: " corr/cn*100 "%";}'
 #Select the highest score from pos and the highest score from neg
 #IT DOESNT WORK FUCK MY LIFE
 #awk '{m=$1;for(i=1;i<=NF;i++)if($i<m)m=$i;print m}' < MULTI_RNNLM_POS > RES_POS
@@ -292,6 +321,7 @@ END{print "LOGREG accuracy: " corr/cn*100 "%";}'
 
 echo "Clean up"
 rm $MULTIRNNLMSCOREDIR/*.SCORE RNNLM-SCORE SENTENCE-VECTOR.LOGREG $MULTILIBLINEARSCOREDIR/*.logregtmp
+rm rnnlm-score.tmp sentence-vector.tmp total.score
 #rm MULTI_RNNLM_POS MULTI_RNNLM_NEG RES_POS RES_NEG
 }
 #end multiBombastic algoritm
