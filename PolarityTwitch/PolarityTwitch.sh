@@ -355,6 +355,8 @@ sed 's!http[s]\?://\S*!URL!g' $twokenizeOutput \
 
 echo "Removing lines with less than 4 tokens"
 awk '{if(NF>4) print tolower($0);}' $1.tmp > $1
+echo "Saving lines with less than 4 tokens"
+awk '{if(NF<4) print tolower($0);}' $1.tmp > $1.less4
 
 echo "Cleanup"
 rm $1.tmp *.split.* *.out
