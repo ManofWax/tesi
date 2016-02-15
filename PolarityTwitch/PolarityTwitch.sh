@@ -259,17 +259,27 @@ done
 
 paste $MULTIRNNLMSCOREDIR/*.SCORE > RNNLM-SCORE
 
+#		negativo	positivo
+#negativo	a			b
+#positivo	c			d
+
+#accuracy: (a+d)/(a+b+c+d)
+#Recall d/(c+d)
+#Percision d/(b+d)
+
 cat RNNLM-SCORE | awk '\
-BEGIN{cn=0; corr=0;} \
+BEGIN{cn=0; corr=0; a=0; b=0; c=0; d=0 } \
 { \
   tmp_pos=0;
   tmp_neg=0;
   for(i=0;i<NF;i++) ($i<1) ? tmp_pos++ : tmp_neg++; \    
-  if (tmp_pos>=tmp_neg) if (cn<3500) corr++; \
-  if (tmp_pos<tmp_neg) if (cn>=3500) corr++; \
+  if (tmp_pos>=tmp_neg) if (cn<3500){ corr++; d++;} else {c++;} \
+  if (tmp_pos<tmp_neg) if (cn>=3500){ corr++; a++;} else {b++;} \
   cn++; \
 } \
-END{print "RNNLM accuracy: " corr/cn*100 "%";}'
+END{print "RNNLM accuracy: " corr/cn*100 "%"; \
+print "Recall: " d/(c+d); \
+print "Precision: " d/(b+d); }'
 
 for i in $MULTILIBLINEARSCOREDIR/*.logreg.out
 do
@@ -473,14 +483,23 @@ rm *.tmp train.txt test.txt model.logreg out.logreg
 
 function PrintFinalResults
 {
+#		negativo	positivo
+#negativo	a			b
+#positivo	c			d
+
+#accuracy: (a+d)/(a+b+c+d)
+#Recall d/(c+d)
+#Percision d/(b+d)
 cat RNNLM-SCORE | awk -v size=$TESTSIZE' \
-BEGIN{cn=0; corr=0;} \
+BEGIN{cn=0; corr=0; a=0; b=0; c=0; d=0;} \
 { \
-  if ($3<1) if (cn<size) corr++; \
-  if ($3>1) if (cn>=size) corr++; \
+  if ($3<1) if (cn<size) {corr++;a++}else {b++;} \
+  if ($3>1) if (cn>=size) {corr++;d++;}else{c++;} \
   cn++; \
 } \
-END{print "RNNLM accuracy: " corr/cn*100 "%";}'
+END{print "RNNLM accuracy: " corr/cn*100 "%";\
+print" recall " d/(c+d);\
+print" precision " d/(b+d);}'
 
 cat SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE' \
 BEGIN{cn=0; corr=0;} \
@@ -667,15 +686,15 @@ if [ ! -z $STEPSMULTI ]; then
         ;;
         4)
         Multi_RnnlmTest
-	    ;;
+	;;
         5)
         Multi_Word2VecExec
         ;;
         6)
         Multi_LiblinearExec
         ;;
-	    8)
-	    Multi_PrintFinalResults
+	8)
+	Multi_PrintFinalResults
         ;;
         99)
         Multi_test $INPUT
