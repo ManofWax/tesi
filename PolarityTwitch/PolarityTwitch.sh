@@ -20,6 +20,7 @@ LIBLINEARTRAINBINARY="liblinear/train"
 LIBLINEARPREDICTBINARY="liblinear/predict"
 MULTIRNNLMSCOREDIR="MultiRnnlmScore"
 MULTILIBLINEARSCOREDIR="MultiLibLinearScore"
+WEKADIR ="bowWeka"
 
 #helper functions
 function CheckFile {
@@ -372,6 +373,20 @@ echo "Cleanup"
 rm $1.tmp *.split.* *.out
 }
 
+function Weka
+{
+shuf $1 > $WEKA/dataset/all.pos
+shuf $2 > $WEKA/dataset/all.neg
+
+head -n $TRAININGSIZE $WEKA/dataset/all.pos > train.pos
+tail -n $TESTSIZE $WEKA/dataset/all.pos > test.pos
+head -n $TRAININGSIZE $WEKA/dataset/all.neg > train.neg
+tail -n $TESTSIZE $WEKA/dataset/all.neg > test.neg
+
+bash $WEKA/weka.sh
+cp $WEKA/result-bow.txt .
+}
+
 function ProcessPosNegFilesKeepEmotes
 {
 CheckFile $1
@@ -649,6 +664,7 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "  -s 10   Rnnlm train and test"
     echo "  -s 11   Sentence vectors/liblinear train and test"
     echo "  -s 19   Process result files and output accurancy"
+	echo "  -s 90   Use WEKA"
     echo ""
     echo "-m --multiBombastic: using bombastic multi model alg. by Fre"
     echo "  -m 1 Tokenization and file cleanup (same as -s 1)"
@@ -696,6 +712,9 @@ if [ ! -z $STEPS ]; then
         19)
         PrintFinalResults
         ;;
+		90)
+		WEKA $ALLPOSFILE $ALLNEGFILE
+		;;
         *)
         #doall
         ;;
