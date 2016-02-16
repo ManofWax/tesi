@@ -11,8 +11,8 @@ ALLPOSFILE="all.pos"
 ALLNEGFILE="all.neg"
 NEUTRALFILE="all.neu"
 SENTENCEVECTORS="sentence_vector.txt"
-TRAININGSIZE=12500
-TESTSIZE=25000
+TRAININGSIZE=80000
+TESTSIZE=20000
 PROCNUMBER=`cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1`
 RNNLMBINARY="rnnlm/rnnlm"
 WORD2VECBINARY="word2vec/word2vec"
@@ -514,7 +514,7 @@ function PrintFinalResults
 #accuracy: (a+d)/(a+b+c+d)
 #Recall d/(c+d)
 #Percision d/(b+d)
-cat RNNLM-SCORE | awk -v size=$TESTSIZE' \
+cat RNNLM-SCORE | awk -v size=$TESTSIZE ' \
 BEGIN{cn=0; corr=0; a=0; b=0; c=0; d=0;} \
 { \
   if ($3<1) if (cn<size) {corr++;a++}else {b++;} \
@@ -525,7 +525,7 @@ END{print "RNNLM accuracy: " corr/cn*100 "%";\
 print" recall " d/(c+d);\
 print" precision " d/(b+d);}'
 
-cat SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE' \
+cat SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE ' \
 BEGIN{cn=0; corr=0;} \
 { \
   if ($2>0.5) if (cn<size) corr++; \
@@ -534,7 +534,7 @@ BEGIN{cn=0; corr=0;} \
 } \
 END{print "Sentence vector + logistic regression accuracy: " corr/cn*100 "%";}'
 
-paste RNNLM-SCORE SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE' \
+paste RNNLM-SCORE SENTENCE-VECTOR.LOGREG | awk -v size=$TESTSIZE ' \
 BEGIN{cn=0; corr=0;} \
 { \
   if (($3-1)*7+(0.5-$5)<0) if (cn<size) corr++; \
