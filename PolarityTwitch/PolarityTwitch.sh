@@ -372,6 +372,30 @@ echo "Cleanup"
 rm $1.tmp *.split.* *.out
 }
 
+function ProcessPosNegFilesKeepEmotes
+{
+CheckFile $1
+
+echo "Generating positive file"
+grep -E -i $positiveEmotes $1 > $ALLPOSFILE
+echo "Generating negative file"
+grep -E -i $negativeEmotes $1 > $ALLNEGFILE
+grep -E -i -v "$positiveEmotes|$negativeEmotes" $1 > $NEUTRALFILE
+
+posToDelete=`echo $positiveEmotes | sed 's:|://gI;s/:g'`
+posToDelete="s/$posToDelete//gI"
+negToDelete=`echo $negativeEmotes | sed 's:|://gI;s/:g'`
+negToDelete="s/$negToDelete//gI"
+
+echo "Removing empty lines"
+sed -i -e "s/  \+/ /g" $ALLPOSFILE
+sed -i -e '/^\s*$/d' $ALLPOSFILE
+sed -i -e "s/  \+/ /g" $ALLNEGFILE
+sed -i -e '/^\s*$/d' $ALLNEGFILE
+sed -i -e "s/  \+/ /g" $NEUTRALFILE
+sed -i -e '/^\s*$/d' $NEUTRALFILE
+}
+
 function ProcessPosNegFiles
 {
 CheckFile $1
@@ -619,6 +643,7 @@ if [ -z $STEPS ] && [ -z $STEPSMULTI ]; then
     echo "-s --steps: set the step starting point"
     echo "  -s 1    Tokenization and file cleanup"
     echo "  -s 2    Split the corpus in pos, neg and neutral files"
+	echo "  -s 21   Split the corpus keeping the emoticons"
     echo "  -s 3    Calculate paragraph vector. It will take a lot of time and a lot of memory"
     echo "  -s 9    do steps 1,2"
     echo "  -s 10   Rnnlm train and test"
@@ -652,6 +677,9 @@ if [ ! -z $STEPS ]; then
         2)
         ProcessPosNegFiles $INPUT
         ;;
+		21)
+		ProcessPosNegFilesKeepEmotes $INPUT
+		;;
         3)
         Word2VecExec $ALLPOSFILE $ALLNEGFILE $NEUTRALFILE
         ;;
